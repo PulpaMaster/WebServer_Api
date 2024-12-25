@@ -2,6 +2,7 @@ import { type Express, type Request, type Response } from 'express'
 import bcrypt from "bcrypt"
 import { usersTable } from '../db/schema'
 import { db } from '../database'
+import { eq } from 'drizzle-orm'
 
 export const initializeAuthAPI = (app: Express) => {
     
@@ -10,6 +11,22 @@ export const initializeAuthAPI = (app: Express) => {
         const passwordHash = await bcrypt.hash(password, 10)
         const newUser = await db.insert(usersTable).values({username, password: passwordHash}).returning()
         res.send({ id: newUser[0].id, username: newUser[0].username})
+      })
+    
+      app.post('/api/auth/login', async (req: Request, res: Response) => {
+        const {password,username} = req.body
+        const existingUsers = await db.select().from(usersTable).where(eq(usersTable.username, username))
+        if(!existingUsers.length){
+          res.status(401).send({error: 'Invalid username or password'})
+          return
+          }
+        const existingUser = existingUsers[0]
+        const passwordMatch = await bcrypt.compare(password, existingUser.password)
+          if(!passwordMatch){
+            res.status(401).send({error: 'Password or Username does not exist!'})
+            return
+          }
+        res.send("Successful-Login")
       })
     
 }
