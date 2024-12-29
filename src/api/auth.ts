@@ -3,6 +3,11 @@ import bcrypt from "bcrypt"
 import { usersTable } from '../db/schema'
 import { db } from '../database'
 import { eq } from 'drizzle-orm'
+import  jwt from 'jsonwebtoken'
+
+
+
+const jwtSecret = process.env.JWT_SECRET || 'supersecret123'
 
 export const initializeAuthAPI = (app: Express) => {
     
@@ -26,7 +31,9 @@ export const initializeAuthAPI = (app: Express) => {
             res.status(401).send({error: 'Password or Username does not exist!'})
             return
           }
-        res.send("Successful-Login")
+        
+        const token = jwt.sign({id: existingUser.id, username: existingUser.username}, jwtSecret,{expiresIn: '1h'})
+        res.send(token) 
       })
     
 }
